@@ -178,20 +178,42 @@ open class StoryElementTransformation(
     suspend fun stopEdit(
         editorSize: IntSize,
         bounds: Rect,
-        coercePosition: Boolean = true
+        coercePosition: Boolean = true,
+        coerceFully: Boolean = false
     ) {
         if (coercePosition) {
-            // Make sure the item fits in the bounds
-            positionFraction = positionFraction
-                .fractionToPx(editorSize)
-                .coerceOffsetInBounds(bounds)
-                .pxToFraction(editorSize)
+            if (coerceFully) {
+                coercePositionInBounds(editorSize, bounds)
+            } else {
+                // Make sure the item fits in the bounds
+                positionFraction = positionFraction
+                    .fractionToPx(editorSize)
+                    .coerceOffsetInBounds(bounds)
+                    .pxToFraction(editorSize)
+            }
         }
 
         // Stop position override
         resetDisplayState(animate = true)
         gesturesEnabled = true
         isOverridingDisplayState = false
+    }
+
+    /**
+     * Moves the real position into [bounds] in one call. A single bounds coercion only corrects a scaled element's overflow by
+     * 1 / scale: the clamp applied on every pan event converges over the gesture, a one-off coercion (free drag, see
+     * [StoryEditorState.clampWhileDragging]) does not. This repeats it until the element stops moving. The displayed state is
+     * left untouched: [stopEdit] or [resetDisplayState] animates or snaps it.
+     */
+    fun coercePositionInBounds(editorSize: IntSize, bounds: Rect) {
+        var position = positionFraction.fractionToPx(editorSize)
+        for (iteration in 0 until MAX_COERCE_ITERATIONS) {
+            val coerced = position.coerceOffsetInBounds(bounds)
+            val moved = (coerced - position).getDistance()
+            position = coerced
+            if (moved < COERCE_EPSILON_PX) break
+        }
+        positionFraction = position.pxToFraction(editorSize)
     }
 
     fun centerAt(positionFraction: Offset) {
@@ -359,3 +381,9 @@ open class StoryElementTransformation(
         }
     }
 }
+
+/** Upper bound of [StoryElementTransformation.coercePositionInBounds]: the overflow shrinks by (1 - 1 / scale) per pass. */
+private const val MAX_COERCE_ITERATIONS = 64
+
+/** A pass moving the element by less than this ends [StoryElementTransformation.coercePositionInBounds]. */
+private const val COERCE_EPSILON_PX = 0.5f
