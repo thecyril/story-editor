@@ -63,6 +63,7 @@ fun StoryEditor(
     modifier: Modifier = Modifier,
     state: StoryEditorState = remember { StoryEditorState() },
     shape: Shape = RectangleShape,
+    showDeleteButton: Boolean = true,
     content: @Composable StoryEditorScope.() -> Unit
 ) {
     // When used in a Pager, without wrapping in a key, the size is never reported, investigate
@@ -73,6 +74,7 @@ fun StoryEditor(
             onDeleteElement = onDeleteElement,
             background = background,
             shape = shape,
+            showDeleteButton = showDeleteButton,
             content = content,
             modifier = modifier.screenshotLayer(
                 editorState = state,
@@ -90,6 +92,7 @@ private fun StoryEditorContent(
     modifier: Modifier = Modifier,
     background: @Composable () -> Unit,
     shape: Shape = RectangleShape,
+    showDeleteButton: Boolean = true,
     content: @Composable StoryEditorScope.() -> Unit
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -136,8 +139,8 @@ private fun StoryEditorContent(
             }
         }
 
-        // Controls overlay
-        if (state.editMode) {
+        // Controls overlay. A host that draws its own drop target passes showDeleteButton = false.
+        if (state.editMode && showDeleteButton) {
             val editorSizeDp = with(LocalDensity.current) { state.editorSize.toSize().toDpSize() }
             Box(modifier = Modifier.size(editorSizeDp)) {
                 EditorDeleteButton(
@@ -354,7 +357,8 @@ private class StoryEditorElementScopeImpl(
                             transformation.updatePosition(
                                 pan = pan,
                                 editorSize = editorState.editorSize,
-                                bounds = editorState.elementsBounds
+                                bounds = editorState.elementsBounds,
+                                coerce = editorState.clampWhileDragging
                             )
                         }
                     }

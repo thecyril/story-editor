@@ -31,13 +31,16 @@ import kotlin.coroutines.suspendCoroutine
  * When using this, parts of the editor will be wrapped in an ComposeView inside an AndroidView.
  * see [ScreenshotMode]
  * @param debug In debug mode, the editor will draw the bounds of each element's hitbox
+ * @param clampWhileDragging when false, a dragged element follows the finger freely (its scale stays bounded) and is only
+ * coerced back into the bounds when the host ends the move (`StoryElementTransformation.stopEdit`)
  */
 @Stable
 class StoryEditorState(
     private val elementsBoundsFraction: Rect = Rect(0.0f, 0.0f, 1f, 1f),
     editMode: Boolean = true,
     val screenshotMode: ScreenshotMode = ScreenshotMode.DISABLED,
-    val debug: Boolean = false
+    val debug: Boolean = false,
+    val clampWhileDragging: Boolean = true
 ) {
 
     /** allow editing (adding/updating/moving elements) */

@@ -275,13 +275,14 @@ open class StoryElementTransformation(
     internal fun updatePosition(
         pan: Offset,
         editorSize: IntSize,
-        bounds: Rect
+        bounds: Rect,
+        coerce: Boolean = true
     ) {
         val newValue = positionFraction
             .fractionToPx(editorSize)
             // Apply changes from gesture
             .let { it + pan.rotateBy(rotation) * scale }
-            .coerceOffsetInBounds(bounds = bounds)
+            .let { if (coerce) it.coerceOffsetInBounds(bounds = bounds) else it }
             .pxToFraction(editorSize)
 
         positionFraction = newValue
